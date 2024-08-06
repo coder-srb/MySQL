@@ -2,7 +2,7 @@ CREATE DATABASE college;
 USE college;
 
 CREATE TABLE student(
-	rollno INT PRIMARY KEY,
+    rollno INT PRIMARY KEY,
     name VARCHAR(50),
     marks INT NOT NULL,
     grade VARCHAR(1),
