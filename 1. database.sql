@@ -15,10 +15,10 @@ CREATE DATABASE college;
 USE college;  -- it means, now we are using "college" database
 
 CREATE TABLE student(	-- creating a table inside "college" database
-id INT PRIMARY KEY,	-- primary key(id) should always be unique & not-null.
-name VARCHAR(30),	-- 30 is the max size of the string value
-age INT NOT NULL	-- (not null) means this column can't have null value.
-/* id, name, age are the columns or records in a table*/
+  id INT PRIMARY KEY,	-- primary key(id) should always be unique & not-null.
+  name VARCHAR(30),	-- 30 is the max size of the string value
+  age INT NOT NULL	-- (not null) means this column can't have null value.
+  /* id, name, age are the columns or records in a table*/
 );
 
 SHOW TABLES;  -- it will show all the tables present in the current database.
