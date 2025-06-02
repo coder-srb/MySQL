@@ -1,0 +1,2279 @@
+Problem Statement: Course Management System  Mock3
+
+Objective:
+
+Develop a console-based C# application using ADO.NET to perform CRU (Create, Read, Update) operations on a Course table in a SQL Server database. The application should enable users to add new courses, display course details by ID, show courses with prices above 1000, and update course prices. The project should be implemented using a disconnected architecture with SqlConnection, SqlDataAdapter and SqlCommandBuilder and all classes, properties, and methods should be made public."
+
+
+
+
+
+
+
+Classes and Properties:
+
+Course Class (in Models folder):
+
+The Course class represents a course entity with the following public properties:
+CourseID (int): Unique identifier for each course. Auto-incremented in the database.
+CourseName (string): The name of the course.
+Price (decimal): The price of the course.
+Instructor (string): The name of the course instructor.
+
+
+Methods:
+
+AddCourse(Course course):
+
+Inserts a new course into the Course table in the database.
+
+Parameters: A Course object containing the details of the course to be added.
+Displays the added course's details after successful insertion.
+Console Messages:
+"Course added successfully."
+
+
+DisplayCourseById(int courseID):
+
+Retrieves and displays the details of a course from the Course table using its CourseID.
+
+Parameters: The CourseID of the course to display.
+Console Messages:
+If the course is found: The details of the course are printed as below.
+CourseID: {row["CourseID"]}\tCourseName: {row["CourseName"]}\tPrice: {row["Price"]}\tInstructor: {row["Instructor"]}
+If no course is found: "No course found with ID {courseID}."
+
+
+DisplayCoursesWithPriceAbove1000():
+
+Retrieves and displays all courses with a price above 1000 from the Course table.
+Console Messages:
+If courses are found: The details of each course are printed as below:
+CourseID: {row["CourseID"]}\tCourseName: {row["CourseName"]}\tPrice: {row["Price"]}\tInstructor: {row["Instructor"]}
+If no courses are found: "No courses with price above 1000 found."
+
+
+UpdateCourse(int courseID, decimal newPrice):
+
+Updates the price of an existing course based on the provided CourseID.
+
+Parameters: The CourseID and the new price value.
+Console Messages:
+If the course is successfully updated: "Course price updated successfully."
+The details of the book are printed as below:
+CourseID: {row["CourseID"]}\tCourseName: {row["CourseName"]}\tPrice: {row["Price"]}\tInstructor: {row["Instructor"]}
+If no course is found: "No course found with ID {courseID}."
+
+
+Program Class:
+
+The Program class serves as the entry point for the Course Management System. It interacts with the user input and oversee the application flow.
+
+Main function: (Prompt all the user inputs in the Main function itself):
+Prompts the user to input course details such as course name, price and instructor.
+Menu options:
+The main menu serves as the user interface for interacting with the system. It provides the following options:
+Course Management Menu
+Add Course
+Display Course by ID
+Display Courses with Price Above 1000
+Update Course
+Exit - Terminates the application with the message "Exiting program...".
+Invalid choice: Displays "Invalid choice, please try again."
+
+
+Database Details:
+
+Database Name: appdb
+
+Table Name: Course
+
+Ensure that the database connection is properly established using the ConnectionStringProvider class.
+
+
+
+Note:
+
+Do not change the class names. 
+
+Do not change the skeleton (Structure of the project given)
+
+
+
+Commands to Run the Project:
+
+cd dotnetapp - Select the dotnet project folder
+dotnet restore - This command will restore all the required packages to run the application.
+dotnet run - To run the application in port 8080 (The settings preloaded click 8080 Port to View)
+dotnet build - To build and check for errors
+dotnet clean - If the same error persists clean the project and build again
+dotnet add package package_name --version 6.0 - Any package if required you can install by the above command. The package that you are installing should support the .Net 6.0 version.
+
+
+To Work with SQLServer:
+
+(Open a New Terminal) type the below commands
+
+sqlcmd -U sa 
+
+password: examlyMssql@123
+
+ 
+
+>use DBName
+
+>go
+--------------------------------------------------------------
+
+using System;
+using System.Data;
+using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
+
+public static class ConnectionProvider
+{
+    public static string connectionString = "User id=sa;password=examlyMssql@123;server=localhost;database=appdb;trusted_connection=false;persist security info=false;encrypt=false";
+}
+
+public class Employee
+{
+    public int EmployeeId { get; set; }
+    public string EmployeeName { get; set; }
+    public string EmployeeCity { get; set; }
+    public int EmployeeSalary { get; set; }
+    public int EmployeeAge { get; set; }
+}
+
+public class Program
+{
+    public static string connectionString = ConnectionProvider.connectionString;
+
+    // ------------------------------- Add Employees ----------------------------------------------------- 
+    public static void AddEmployee(Employee employee)
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("select * from Employees", connection);        // connected to disconnected - add only one SqlCommand line above the SqlDataAdapter.
+                SqlDataAdapter adap = new SqlDataAdapter(cmd);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                DataRow dr = dt.NewRow();
+                // dr["EmployeeID"] = employee.EmployeeId;
+                dr["EmployeeName"] = employee.EmployeeName;
+                dr["EmployeeCity"] = employee.EmployeeCity;
+                dr["EmployeeAge"] = employee.EmployeeAge;
+                dr["EmployeeSalary"] = employee.EmployeeSalary;
+                dt.Rows.Add(dr);
+                adap.Update(dt);                                                 // disconnected to connected
+                Console.WriteLine("Employee added successfully.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Update Employee By ID ----------------------------------------------------- 
+    public static void UpdateEmployeeByID(int id, string newName, string newCity, int newAge, int newSalary)
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adap = new SqlDataAdapter("select * from Employees", connection);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                DataRow[] dr = dt.Select($"EmployeeID = {id}");
+                if (dr.Length == 0)
+                {
+                    Console.WriteLine("Employee not found.");
+                }
+                else
+                {
+                    dr[0]["EmployeeName"] = newName;
+                    dr[0]["EmployeeCity"] = newCity;
+                    dr[0]["EmployeeAge"] = newAge;
+                    dr[0]["EmployeeSalary"] = newSalary;
+                    adap.Update(dt);
+                }
+            }
+            Console.WriteLine("Employee updated successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Update Employee By Name ----------------------------------------------------- 
+    public static void UpdateEmployeeByName(string name, int newsalary)
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adap = new SqlDataAdapter("select * from Employees", connection);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                DataRow[] dr = dt.Select($"EmployeeName = '{name}'");
+                if (dr.Length == 0)
+                {
+                    Console.WriteLine("Employee not found.");
+                }
+                else
+                {
+                    dr[0]["EmployeeSalary"] = newsalary;
+                    adap.Update(dt);
+                }
+            }
+            Console.WriteLine("Employee updated successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Search Employee By ID using DataView ----------------------------------------------------- 
+    public static void SearchEmployeeByID(int id)
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("select * from Employees", connection);           // connected to disconnected
+                SqlDataAdapter adap = new SqlDataAdapter(cmd);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                DataView search_id = new DataView(dt);
+                search_id.RowFilter = $"EmployeeID = {id}";
+                if (search_id.Count == 0)
+                {
+                    Console.WriteLine("Employee not found.");
+                }
+                else
+                {
+                    Console.WriteLine("Employee Found successfully.");
+                    foreach (DataRowView dr in search_id)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}\tEmployee City: {dr["EmployeeCity"]}\tEmployee Age: {dr["EmployeeAge"]}\tEmployee Salary: {dr["EmployeeSalary"]}");
+                    }
+
+                }
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Search Employee By Name using DataView----------------------------------------------------- 
+    public static void SearchEmployeeByName(string name)
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("select * from Employees", connection);             // connected to disconnected
+                SqlDataAdapter adap = new SqlDataAdapter(cmd);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                // DataRow[] searched_nm = dt.Select($"EmployeeName = '{name}'");            // using DataRow
+                DataView searched_nm = new DataView(dt);                                  // using DataView
+                searched_nm.RowFilter = $"EmployeeName = '{name}'";
+                if (searched_nm.Count == 0)
+                {
+                    Console.WriteLine("Employee not found.");
+                }
+                else
+                {
+                    Console.WriteLine("Employee Found successfully.");
+                    foreach (DataRowView dr in searched_nm)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}\tEmployee City: {dr["EmployeeCity"]}\tEmployee Age: {dr["EmployeeAge"]}\tEmployee Salary: {dr["EmployeeSalary"]}");
+                    }
+
+                }
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Search Employee By City using DataView ----------------------------------------------------- 
+    public static void SearchEmployeeByCity(string city)
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("select * from Employees", connection);                 // 
+                SqlDataAdapter adap = new SqlDataAdapter(cmd);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                // DataRow[] searched_c = dt.Select($"EmployeeCity = '{city}'");
+                DataView searched_c = new DataView(dt);
+                searched_c.RowFilter = $"EmployeeCity = '{city}'";
+                if (searched_c.Count == 0)
+                {
+                    Console.WriteLine("Employee not found.");
+                }
+                else
+                {
+                    Console.WriteLine("Employee Found successfully.");
+                    foreach (DataRowView dr in searched_c)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}\tEmployee City: {dr["EmployeeCity"]}\tEmployee Age: {dr["EmployeeAge"]}\tEmployee Salary: {dr["EmployeeSalary"]}");
+                    }
+
+                }
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Display Employees -----------------------------------------------------
+
+    public static void DisplayEmployees()
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adap = new SqlDataAdapter("select * from Employees", connection);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                if (dt.Rows.Count == 0)
+                {
+                    Console.WriteLine("Employee not found.");
+                }
+                else
+                {
+                    foreach (DataRow dr in ds.Tables["Employees"].Rows)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}\tEmployee City: {dr["EmployeeCity"]}\tEmployee Age: {dr["EmployeeAge"]}\tEmployee Salary: {dr["EmployeeSalary"]}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Employee names with salary above 250000 with Id in ASC order usinh dataview-----------------------------------------------------
+    public static void SalaryAbove25000()
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("select * from Employees", connection);        // connected to dissconnected
+                SqlDataAdapter adap = new SqlDataAdapter(cmd);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                // DataRow[] GSalary = dt.Select("EmployeeSalary > 25000", "EmployeeID ASC");
+                DataView GSalary = new DataView(dt);
+                GSalary.RowFilter = "EmployeeSalary > 25000";
+                GSalary.Sort = "EmployeeID ASC";
+                if (GSalary.Count == 0)
+                {
+                    Console.WriteLine("Employees not found.");
+                }
+                else
+                {
+                    Console.WriteLine("Employee names whose salary is above 25000:");
+                    foreach (DataRowView dr in GSalary)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Employee Age Greater than 25 -----------------------------------------------------
+    public static void AgeGreaterThan25()
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adap = new SqlDataAdapter("select * from Employees", connection);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                // DataRow[] GAge = dt.Select("EmployeeAge > 25");
+                DataView GAge = new DataView(dt);
+                GAge.RowFilter = "EmployeeAge > 25";
+                if (GAge.Count == 0)
+                {
+                    Console.WriteLine("Employees not found.");
+                }
+                else
+                {
+                    foreach (DataRowView dr in GAge)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}\tEmployee City: {dr["EmployeeCity"]}\tEmployee Age: {dr["EmployeeAge"]}\tEmployee Salary: {dr["EmployeeSalary"]}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Employee Age Less than 25 -----------------------------------------------------
+    public static void AgeLessThan25()
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adap = new SqlDataAdapter("select * from Employees", connection);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                DataRow[] SAge = dt.Select("EmployeeAge < 25");
+                if (SAge.Length == 0)
+                {
+                    Console.WriteLine("Employees not found.");
+                }
+                else
+                {
+                    foreach (DataRow dr in SAge)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}\tEmployee City: {dr["EmployeeCity"]}\tEmployee Age: {dr["EmployeeAge"]}\tEmployee Salary: {dr["EmployeeSalary"]}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Employee Age Between 25 to 30 -----------------------------------------------------
+    public static void AgeBetween()
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("select * from Employees", connection);      // connected to disconnected 
+                SqlDataAdapter adap = new SqlDataAdapter(cmd);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                // DataRow[] BAge = dt.Select("EmployeeAge >= 25 AND EmployeeAge <= 30");
+                DataView BAge = new DataView(dt);                                                  // using dataView
+                BAge.RowFilter = "EmployeeAge > 25 AND EmployeeAge < 30";
+                if (BAge.Count == 0)
+                {
+                    Console.WriteLine("Employees not found");
+                }
+                else
+                {
+                    foreach (DataRowView dr in BAge)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}\tEmployee City: {dr["EmployeeCity"]}\tEmployee Age: {dr["EmployeeAge"]}\tEmployee Salary: {dr["EmployeeSalary"]}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Employee Name starts with 'S' -----------------------------------------------------
+    public static void NameStartWith_S()
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adap = new SqlDataAdapter("select * from Employees", connection);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                DataRow[] SWL = dt.Select("EmployeeName LIKE 'S%' ");
+                if (SWL.Length == 0)
+                {
+                    Console.WriteLine("Employee not found");
+                }
+                else
+                {
+                    foreach (DataRow dr in SWL)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}\tEmployee City: {dr["EmployeeCity"]}\tEmployee Age: {dr["EmployeeAge"]}\tEmployee Salary: {dr["EmployeeSalary"]}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Employee Name ends with 'H' -----------------------------------------------------
+    public static void NameEndWith_H()
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adap = new SqlDataAdapter("select * from Employees", connection);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                DataRow[] SWL = dt.Select("EmployeeName LIKE '%H' ");
+                if (SWL.Length == 0)
+                {
+                    Console.WriteLine("Employee not found");
+                }
+                else
+                {
+                    foreach (DataRow dr in SWL)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}\tEmployee City: {dr["EmployeeCity"]}\tEmployee Age: {dr["EmployeeAge"]}\tEmployee Salary: {dr["EmployeeSalary"]}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Sort Employee Name in ASC order -----------------------------------------------------
+    public static void SortNameASC()
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adap = new SqlDataAdapter("select * from Employees", connection);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                if(dt.Rows.Count == 0)
+                {
+                    Console.WriteLine("Employee not found.");
+                }
+                else
+                {
+                    DataView dv = new DataView(dt) {Sort = "EmployeeName ASC"};
+                    foreach(DataRowView dr in dv)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}\tEmployee City: {dr["EmployeeCity"]}\tEmployee Age: {dr["EmployeeAge"]}\tEmployee Salary: {dr["EmployeeSalary"]}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Sort Employee Age in DESC order -----------------------------------------------------
+    public static void SortAgeDESC()
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adap = new SqlDataAdapter("select * from Employees", connection);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                if(dt.Rows.Count == 0)
+                {
+                    Console.WriteLine("Employee not found.");
+                }
+                else
+                {
+                    DataView dv = new DataView(dt) {Sort = "EmployeeAge DESC"};
+                    foreach(DataRowView dr in dv)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}\tEmployee City: {dr["EmployeeCity"]}\tEmployee Age: {dr["EmployeeAge"]}\tEmployee Salary: {dr["EmployeeSalary"]}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Delete Employee by ID -----------------------------------------------------
+    public static void DeleteByID(int id)
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adap = new SqlDataAdapter("select * from Employees", connection);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                DataRow[] dr = dt.Select($"EmployeeID = {id}");
+                if (dr.Length == 0)
+                {
+                    Console.WriteLine("Book not Found.");
+                }
+                else
+                {
+                    dr[0].Delete();
+                    adap.Update(dt);
+                }
+                Console.WriteLine("Employee deleted successfully.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Delete Employee by City -----------------------------------------------------
+    public static void DeleteByCity(string city)
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adap = new SqlDataAdapter("select * from Employees", connection);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                DataRow[] del_city = dt.Select($"EmployeeCity = '{city}'");
+                if (del_city.Length == 0)
+                {
+                    Console.WriteLine("Employee not Found.");
+                }
+                else
+                {
+                    foreach (DataRow dr in del_city)
+                        dr.Delete();
+                }
+                adap.Update(dt);
+                Console.WriteLine("Employee deleted successfully.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Delete Employee whose age is below 25 -----------------------------------------------------
+    public static void DeleteAgeBelow25()
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adap = new SqlDataAdapter("select * from Employees", connection);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                DataRow[] del_Age = dt.Select("EmployeeAge < 25");
+                if (del_Age.Length == 0)
+                {
+                    Console.WriteLine("Employees not found.");
+                }
+                else
+                {
+                    foreach (DataRow dr in del_Age)
+                        dr.Delete();
+                }
+                adap.Update(dt);
+                Console.WriteLine("Employee deleted successfully.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    // ------------------------------- Sort Employee Name and Employee Age in ASC/DESC order -----------------------------------------------------
+    public static void SortASCandDESC(string sortBy)
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adap = new SqlDataAdapter("select * from Employees", connection);
+                SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+                DataSet ds = new DataSet();
+                adap.Fill(ds, "Employees");
+                DataTable dt = ds.Tables["Employees"];
+                DataView dv = new DataView(dt);
+                if (sortBy == "age")
+                {
+                    dv.Sort = "EmployeeAge ASC";
+                    foreach (DataRowView dr in dv)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}\tEmployee City: {dr["EmployeeCity"]}\tEmployee Age: {dr["EmployeeAge"]}\tEmployee Salary: {dr["EmployeeSalary"]}");
+                    }
+                }
+                else if(sortBy == "name")
+                {
+                    dv.Sort = "EmployeeName DESC";
+                    foreach (DataRowView dr in dv)
+                    {
+                        Console.WriteLine($"Employee Id: {dr["EmployeeId"]}\tEmployee Name: {dr["EmployeeName"]}\tEmployee City: {dr["EmployeeCity"]}\tEmployee Age: {dr["EmployeeAge"]}\tEmployee Salary: {dr["EmployeeSalary"]}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Invalid option selected. Enter only Age and Name.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    public static void Main(string[] args)
+    {
+        bool exit = false;
+        while (!exit)
+        {
+            Console.WriteLine("Menu:");
+            Console.WriteLine("01. Add Employee");   // done
+            Console.WriteLine("02. List of Employee");   // done
+            Console.WriteLine("03. Update Employee By ID");      // done
+            Console.WriteLine("04. Update Employee By Name");    // done
+            Console.WriteLine("05. Search Employee by ID");     // done
+            Console.WriteLine("06. Search Employee by Name");    // done
+            Console.WriteLine("07. Search Employee by City");   // done
+            Console.WriteLine("08. Search Employee by Name starts with 'S'.");  // done
+            Console.WriteLine("09. Search Employee by Name end with 'H'.");     // done   
+            Console.WriteLine("10. Employee Age Greater than 25");   // done
+            Console.WriteLine("11. Employee Age Below 25");     // done
+            Console.WriteLine("12. Display Employee Age is Between 25 to 30");   // done
+            Console.WriteLine("13. Display Employee Names with Salary Above 25000 with Id in ASC order"); // done
+            Console.WriteLine("14. Sort Employee By Name in ASC "); // done  
+            Console.WriteLine("15. Sort Employee By Age in DESC"); // done
+            Console.WriteLine("16. Sort Employee By Name and Age in ASC/DESC:");   // done
+            Console.WriteLine("17. Delete Employee By Id");  // done
+            Console.WriteLine("18. Delete Employee By City");   // done
+            Console.WriteLine("19. Delete Employee whose Age below 25"); // done
+            Console.WriteLine("20. Exit");
+            Console.Write("Enter your choice: ");
+            int choice = int.Parse(Console.ReadLine());
+            switch (choice)
+            {
+                case 1:
+                    Console.Write("Employee Name: ");
+                    string name = Console.ReadLine();
+                    Console.Write("Employee City: ");
+                    string city = Console.ReadLine();
+                    Console.Write("Employee Age: ");
+                    int age = int.Parse(Console.ReadLine());
+                    Console.Write("Employee Salary: ");
+                    int salary = int.Parse(Console.ReadLine());
+
+                    Employee employee = new Employee
+                    {
+                        EmployeeName = name,
+                        EmployeeCity = city,
+                        EmployeeAge = age,
+                        EmployeeSalary = salary
+                    };
+                    AddEmployee(employee);
+                    break;
+                case 2:
+                    DisplayEmployees();
+                    break;
+                case 3:
+                    Console.Write("Enter Employee ID you want to be Update: ");
+                    int Nid = int.Parse(Console.ReadLine());
+                    Console.Write("Employee New Name: ");
+                    string Nname = Console.ReadLine();
+                    Console.Write("Employee New City: ");
+                    string Ncity = Console.ReadLine();
+                    Console.Write("Employee New Age: ");
+                    int Nage = int.Parse(Console.ReadLine());
+                    Console.Write("Employee New Salary: ");
+                    int Nsalary = int.Parse(Console.ReadLine());
+                    Program.UpdateEmployeeByID(Nid, Nname, Ncity, Nage, Nsalary);
+                    break;
+                case 4:
+                    Console.Write("Enter Employee Name to update the salary: ");
+                    string Name = Console.ReadLine();
+                    Console.Write("Employee Updated Salary: ");
+                    int Usalary = int.Parse(Console.ReadLine());
+                    Program.UpdateEmployeeByName(Name, Usalary);
+                    break;
+                case 5:
+                    Console.Write("Enter Employee ID you want to be Search: ");
+                    int Sid = int.Parse(Console.ReadLine());
+                    Program.SearchEmployeeByID(Sid);
+                    break;
+                case 6:
+                    Console.Write("Enter Employee Name you want to be Search: ");
+                    string Sname = Console.ReadLine();
+                    Program.SearchEmployeeByName(Sname);
+                    break;
+                case 7:
+                    Console.Write("Enter City you want to be Search: ");
+                    string Scity = Console.ReadLine();
+                    Program.SearchEmployeeByCity(Scity);
+                    break;
+                case 8:
+                    Program.NameStartWith_S();
+                    break;
+                case 9:
+                    Program.NameEndWith_H();
+                    break;
+                case 10:
+                    Program.AgeGreaterThan25();
+                    break;
+                case 11:
+                    Program.AgeLessThan25();
+                    break;
+                case 12:
+                    Program.AgeBetween();
+                    break;
+                case 13:
+                    Program.SalaryAbove25000();
+                    break;
+                case 14:
+                    Program.SortNameASC();
+                    break;
+                case 15:
+                    Program.SortAgeDESC();
+                    break;
+                case 16:
+                    Console.Write("What you want to Sort (age or name): ");
+                    string nm_age = Console.ReadLine();
+                    Program.SortASCandDESC(nm_age);
+                    break;
+                case 17:
+                    Console.Write("Enter Employee ID you want to be delete: ");
+                    int del_id = int.Parse(Console.ReadLine());
+                    Program.DeleteByID(del_id);
+                    break;
+                case 18:
+                    Console.Write("Enter City you want to be delete: ");
+                    string del_city = Console.ReadLine();
+                    Program.DeleteByCity(del_city);
+                    break;
+                case 19:
+                    Program.DeleteAgeBelow25();
+                    break;
+                case 20:
+                    exit = true;
+                    Console.WriteLine("Exiting the application...");
+                    break;
+                default:
+                    Console.WriteLine("Invalid Choice.");
+                    break;
+            }
+        }
+    }
+}
+-----------------------------------------------------------------------------------------------------------------------
+
+week 2 day 5----imp
+
+Case Study: Console-based Employee Management Application Using ADO.NET
+Requirements
+1. Employee Class
+Create an Employee class in the Models folder. It represents an employee with their details.
+Properties:
+EmployeeID (int): Unique identifier for the employee (auto-incremented).
+EmployeeName (string): The name of the employee.
+Department (string): The department where the employee works.
+Salary (decimal): The salary of the employee.
+. Program Class
+Methods:
+1. AddEmployee(Employee employee):
+Add a new employee to the Employees table in the database.
+Display the message "Employee added successfully." upon success.
+Parameters: An Employee object containing the details of the employee to be added.
+Use DataSet and SqlDataAdapter to insert the employee into the table.
+2. ListEmployees():
+Retrieve and display all employees from the Employees table.
+Fetch data using SqlDataAdapter and print the details of each employee.
+Display employee details in the format:
+EmployeeID: {row["EmployeeID"]}\tEmployeeName: {row["EmployeeName"]}\tDepartment: {row["Department"]}\tSalary: {row["Salary"]}.
+Handle the case where no employees are available with the error message: "No Employees available."
+3. UpdateEmployee(int employeeID, string newEmployeeName, string newDepartment, decimal newSalary):
+Update the details of an employee based on their EmployeeID.
+Display the message "Employee details updated successfully." upon success.
+Parameters:
+employeeID (int): The ID of the employee to be updated.
+newEmployeeName (string): The updated name of the employee.
+newDepartment (string): The updated department.
+newSalary (decimal): The updated salary.
+Use DataSet and SqlDataAdapter to find and update the employee in the table.
+Handle the case where the employee ID is not found with the error message: "Employee not found."
+3. Main Menu
+This serves as the entry point for the application and provides a user interface to interact with the system.
+Menu Options:
+Add Employee:
+Allows the user to input details for a new employee and add them to the database.
+List Employees:
+Displays all employees currently stored in the database.
+Update Employee Details:
+Allows the user to update the details of an employee based on their EmployeeID.
+Exit:
+Terminates the application with the message: "Exiting the application..."
+Database Information
+Database Name: appdb
+Table Name: Employees
+Table Columns:
+EmployeeID (int, primary key, auto-incremented)
+EmployeeName (nvarchar)
+Department (nvarchar)
+Salary (decimal)
+Error Handling:
+Ensure the database connection is properly established.
+Handle exceptions (e.g., invalid inputs, database errors) gracefully with user-friendly error messages.
+
+// Employee.cs
+namespace Models
+{
+    public class Employee
+    {
+        public int EmployeeID { get; set; }
+        public string EmployeeName { get; set; }
+        public string Department { get; set; }
+        public decimal Salary { get; set; }
+    }
+}
+
+// Program.cs
+using System;
+using System.Data;
+using System.Data.SqlClient;
+using Models;
+
+class Program
+{
+    private static readonly string connectionString = "Server=your_server_name;Database=appdb;Trusted_Connection=True;";
+
+    public static void AddEmployee(Employee employee)
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                string query = "SELECT * FROM Employees";
+                SqlDataAdapter adapter = new SqlDataAdapter(query, connection);
+                SqlCommandBuilder builder = new SqlCommandBuilder(adapter);
+
+                DataSet dataSet = new DataSet();
+                adapter.Fill(dataSet, "Employees");
+
+                DataRow newRow = dataSet.Tables["Employees"].NewRow();
+                newRow["EmployeeName"] = employee.EmployeeName;
+                newRow["Department"] = employee.Department;
+                newRow["Salary"] = employee.Salary;
+                dataSet.Tables["Employees"].Rows.Add(newRow);
+
+                adapter.Update(dataSet, "Employees");
+                Console.WriteLine("Employee added successfully.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    public static void ListEmployees()
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                string query = "SELECT * FROM Employees";
+                SqlDataAdapter adapter = new SqlDataAdapter(query, connection);
+
+                DataSet dataSet = new DataSet();
+                adapter.Fill(dataSet, "Employees");
+
+                DataTable table = dataSet.Tables["Employees"];
+
+                if (table.Rows.Count > 0)
+                {
+                    foreach (DataRow row in table.Rows)
+                    {
+                        Console.WriteLine($"EmployeeID: {row["EmployeeID"]}\tEmployeeName: {row["EmployeeName"]}\tDepartment: {row["Department"]}\tSalary: {row["Salary"]}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No Employees available.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    public static void UpdateEmployee(int employeeID, string newEmployeeName, string newDepartment, decimal newSalary)
+    {
+        try
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                string query = "SELECT * FROM Employees";
+                SqlDataAdapter adapter = new SqlDataAdapter(query, connection);
+                SqlCommandBuilder builder = new SqlCommandBuilder(adapter);
+
+                DataSet dataSet = new DataSet();
+                adapter.Fill(dataSet, "Employees");
+
+                DataTable table = dataSet.Tables["Employees"];
+
+                DataRow rowToUpdate = null;
+                foreach (DataRow row in table.Rows)
+                {
+                    if ((int)row["EmployeeID"] == employeeID)
+                    {
+                        rowToUpdate = row;
+                        break;
+                    }
+                }
+
+                if (rowToUpdate != null)
+                {
+                    rowToUpdate["EmployeeName"] = newEmployeeName;
+                    rowToUpdate["Department"] = newDepartment;
+                    rowToUpdate["Salary"] = newSalary;
+
+                    adapter.Update(dataSet, "Employees");
+                    Console.WriteLine("Employee details updated successfully.");
+                }
+                else
+                {
+                    Console.WriteLine("Employee not found.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    static void Main(string[] args)
+    {
+        while (true)
+        {
+            Console.WriteLine("\nMenu:");
+            Console.WriteLine("1 - Add Employee");
+            Console.WriteLine("2 - List Employees");
+            Console.WriteLine("3 - Update Employee Details");
+            Console.WriteLine("4 - Exit");
+            Console.Write("Enter your choice: ");
+
+            string choice = Console.ReadLine();
+
+            switch (choice)
+            {
+                case "1":
+                    Console.Write("Enter Employee Name: ");
+                    string employeeName = Console.ReadLine();
+
+                    Console.Write("Enter Department: ");
+                    string department = Console.ReadLine();
+
+                    Console.Write("Enter Salary: ");
+                    decimal salary = decimal.Parse(Console.ReadLine());
+
+                    AddEmployee(new Employee { EmployeeName = employeeName, Department = department, Salary = salary });
+                    break;
+
+                case "2":
+                    ListEmployees();
+                    break;
+
+                case "3":
+                    Console.Write("Enter Employee ID to update: ");
+                    int employeeID = int.Parse(Console.ReadLine());
+
+                    Console.Write("Enter new Employee Name: ");
+                    string newEmployeeName = Console.ReadLine();
+
+                    Console.Write("Enter new Department: ");
+                    string newDepartment = Console.ReadLine();
+
+                    Console.Write("Enter new Salary: ");
+                    decimal newSalary = decimal.Parse(Console.ReadLine());
+
+                    UpdateEmployee(employeeID, newEmployeeName, newDepartment, newSalary);
+                    break;
+
+                case "4":
+                    Console.WriteLine("Exiting the application...");
+                    return;
+
+                default:
+                    Console.WriteLine("Invalid choice, please try again.");
+                    break;
+            }
+        }
+    }
+}
+-----------------------------------------------------------------
+
+Custom Exception
+----------------------------------------------------------------
+
+using System;
+using System.Collections;
+using System.Runtime.ConstrainedExecution;
+using System.Threading;
+using Internal;
+
+
+public class Employee
+{
+    public int EmployeeID { get; set; }
+    public string EmployeeName { get; set; }
+    public int EmployeeAge { get; set; }
+    public int EmployeeSalary { get; set; }
+
+    public void DisplayEmployeeDetails()
+    {
+        Console.WriteLine($"Employee ID: {EmployeeID}, Employee Name: {EmployeeName}, Employee Age: {EmployeeAge}, Employee Salary: {EmployeeSalary}");
+    }
+}
+
+
+// Custome Execption
+public class EmployeeException : Exception
+{
+    public EmployeeException(string message) : base(message)
+    {
+
+    }
+}
+
+public class EmployeeManager
+{
+    public ArrayList EmployeeList { get; set; } = new ArrayList();
+
+    public void AddEmployee(Employee employee)
+    {
+        foreach (Employee emp in EmployeeList)
+        {
+            if (emp.EmployeeID == employee.EmployeeID)
+            {
+                Console.WriteLine("Employee already exists.");
+                return;
+            }
+        }
+        EmployeeList.Add(employee);
+        Console.WriteLine("Employee added successfully");
+    }
+
+    public void DisplayEmployees()
+    {
+        if (EmployeeList.Count == 0)
+        {
+            Console.WriteLine("Employee not found.");
+        }
+        else
+        {
+            foreach (Employee emp in EmployeeList)
+            {
+                emp.DisplayEmployeeDetails();
+            }
+        }
+    }
+
+    public void UpdateEmployee(int id, string newName, int newAge, int newSalaray)
+    {
+        for (int i = 0; i < EmployeeList.Count; i++)
+        {
+            Employee emp = (Employee)EmployeeList[i];
+            if (emp.EmployeeID == id)
+            {
+                emp.EmployeeName = newName;
+                emp.EmployeeAge = newAge;
+                emp.EmployeeSalary = newSalaray;
+                Console.WriteLine("Employee Updated Successfully.");
+            }
+            else
+            {
+                throw new EmployeeException("Employee not found.");
+            }
+        }
+    }
+
+    public void SearchEmployee(int id)
+    {
+        for (int i = 0; i < EmployeeList.Count; i++)
+        {
+            Employee emp = (Employee)EmployeeList[i];
+            if (emp.EmployeeID == id)
+            {
+                Console.WriteLine("Employee Found Successfully.");
+                Console.WriteLine($"Employee ID: {emp.EmployeeID}, Employee Name: {emp.EmployeeName}, Employee Age: {emp.EmployeeAge}, Employee Salary: {emp.EmployeeSalary}");
+            }
+            else
+            {
+                throw new EmployeeException("Employee not found.");
+            }
+        }
+    }
+
+    public void DeleteEmployee(int id)
+    {
+        for (int i = 0; i < EmployeeList.Count; i++)
+        {
+            Employee emp = (Employee)EmployeeList[i];
+            if (emp.EmployeeID == id)
+            {
+                EmployeeList.Remove(emp);
+                Console.WriteLine("Employee deleted successfully");
+            }
+            else
+            {
+                throw new EmployeeException("Employee not found");
+            }
+        }
+    }
+
+}
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        EmployeeManager employeeManager = new EmployeeManager();
+        bool exit = false;
+        while (!exit)
+        {
+            Console.WriteLine("Menu:");
+            Console.WriteLine("1. Add Employee");
+            Console.WriteLine("2. List Employee");
+            Console.WriteLine("3. Update Employee");
+            Console.WriteLine("4. Search Employee");
+            Console.WriteLine("5. Delete Employee");
+            Console.WriteLine("6. Exit");
+            Console.WriteLine("Enter your choice: ");
+            int choice = int.Parse(Console.ReadLine());
+            switch (choice)
+            {
+                case 1:
+                try
+                {
+                    Console.Write("Enter Employee ID: ");
+                    int id = int.Parse(Console.ReadLine());
+                    Console.Write("Enter Employee Name: ");
+                    string name = Console.ReadLine();
+                    Console.Write("Enter Employee Age: ");
+                    int age = int.Parse(Console.ReadLine());
+                    Console.Write("Enter Employee Salary: ");
+                    int salary = int.Parse(Console.ReadLine());
+
+                    Employee employee = new Employee
+                    {
+                        EmployeeID = id,
+                        EmployeeName = name,
+                        EmployeeAge = age,
+                        EmployeeSalary = salary
+                    };
+                    employeeManager.AddEmployee(employee);
+                }
+                catch(FormatException ex)
+                {
+                     Console.WriteLine(ex.Message);
+                }
+                    break;
+                case 2:
+                    employeeManager.DisplayEmployees();
+                    break;
+                case 3:
+                    try
+                    {
+                        Console.Write("Enter Employee ID you want to update: ");
+                        int uid = int.Parse(Console.ReadLine());
+                        Console.Write("Enter New Employee Name: ");
+                        string uname = Console.ReadLine();
+                        Console.Write("Enter New Employee Age: ");
+                        int uage = int.Parse(Console.ReadLine());
+                        Console.Write("Enter New Employee Salary: ");
+                        int usalary = int.Parse(Console.ReadLine());
+                        employeeManager.UpdateEmployee(uid, uname, uage, usalary);
+                    }
+                    catch (EmployeeException ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                    catch(FormatException ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                    break;
+                case 4:
+                    try
+                    {
+                        Console.Write("Enter Employee ID you want to search: ");
+                        int sid = int.Parse(Console.ReadLine());
+                        employeeManager.SearchEmployee(sid);
+                    }
+                    catch (EmployeeException ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                    catch(FormatException ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                    break;
+                case 5:
+                    try
+                    {
+                        Console.Write("Enter Employee ID you want to delete: ");
+                        int del_id = int.Parse(Console.ReadLine());
+                        employeeManager.DeleteEmployee(del_id);
+                    }
+                    catch (EmployeeException ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                    catch(FormatException ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                    break;
+                case 6:
+                    exit = true;
+                    Console.WriteLine("Exiting Application...");
+                    break;
+                default:
+                    Console.WriteLine("Invalid choice.");
+                    break;
+            }
+        }
+    }
+}
+-----------------------------------------------------------------------
+Twist-------Ado.net
+---------------------------------------------------
+
+Using System;
+Using System.Data.SqlClient;
+Using System.Data;
+Public class Meal
+{
+Public int MealID { get; set; }
+Public string MealName { get; set; }
+Public string DayOfWeek { get; set; }
+Public int Calories { get; set; }
+
+}
+
+Namespace dotnetapp
+{
+Public static class ConnectionStringProvider
+{
+Public static string ConnectionString { get; } = â€œUser
+ID=sa;password=examlyMssql@123;server=localhost;Database=appdb;trusted_connec
+tion=false;Persist Security Info=False;Encrypt=Falseâ€;
+}
+
+Public class Program
+{
+Static string connectionString = ConnectionStringProvider.ConnectionString;
+
+Public static void AddMeal(Meal meal)
+
+{
+Using (SqlConnection connection = new SqlConnection(connectionString))
+{
+SqlDataAdapter adap = new SqlDataAdapter(â€œSelect * from Mealsâ€,
+connection);
+SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œMealsâ€);
+
+DataTable dt = ds.Tables[â€œMealsâ€];
+DataRow dr = dt.NewRow();
+Dr[1] = meal.MealName;
+Dr[2] = meal.DayOfWeek;
+Dr[3] = meal.Calories;
+Dt.Rows.Add(dr);
+Adap.Update(dt);
+System.Console.WriteLine(â€œMeal added successfully.â€);
+
+}
+
+}
+Public static void ListMeals()
+{
+Using (SqlConnection connection = new SqlConnection(connectionString))
+{
+SqlDataAdapter adap = new SqlDataAdapter(â€œSelect * from Mealsâ€,
+connection);
+SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œMealsâ€);
+
+DataTable dt = ds.Tables[â€œMealsâ€];
+DataRow[] dr1 = dt.Select(â€œMealName Like â€˜b*â€™â€,â€MealID DESCâ€); //
+// DataView dv = new DataView(dt);
+
+Int drN = dt.Rows.Count;
+If (drN == 0)
+{
+System.Console.WriteLine(â€œNo Meals available.â€);
+}
+Else
+{
+Foreach (DataRow dr in dr1)
+{
+System.Console.WriteLine($â€MealID: {dr[â€œMealIDâ€]},MealName:
+{dr[â€œMealNameâ€]},DayOfWeek: {dr[â€œDayOfWeekâ€]},Calories: {dr[â€œCaloriesâ€]}â€);
+}
+}
+// foreach(DataRow d in dr1)
+// {
+//
+Console.WriteLine($â€{d[â€œMealIDâ€]},{d[â€œMealNameâ€]},{d[â€œDayOfWeekâ€]},{d[â€œCaloriesâ€]}â€);
+// }
+}
+
+}
+
+Public static void UpdateMeal(int mealID, string newMealName, string
+newDayOfWeek, int newCalories)
+{
+Using (SqlConnection connection = new SqlConnection(connectionString))
+{
+SqlDataAdapter adap = new SqlDataAdapter(â€œSelect * from Mealsâ€,
+connection);
+SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œMealsâ€);
+
+DataTable dt = ds.Tables[â€œMealsâ€];
+
+DataRow[] dr2 = dt.Select($â€MealID = {mealID}â€);
+If (dr2.Length == 0)
+{
+System.Console.WriteLine(â€œMeal not found.â€);
+
+}
+Else
+{
+Dr2[0][â€œMealNameâ€] = newMealName;
+Dr2[0][â€œDayOfWeekâ€] = newDayOfWeek;
+Dr2[0][â€œCaloriesâ€] = newCalories;
+
+System.Console.WriteLine(â€œMeal details updated successfully.â€);
+Adap.Update(dt);
+
+}
+
+}
+
+}
+Public static void DeleteByID(int mealID)
+{
+Using (SqlConnection connection = new SqlConnection(connectionString))
+{
+SqlDataAdapter adap = new SqlDataAdapter(â€œSelect * from Mealsâ€,
+connection);
+SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œMealsâ€);
+
+DataTable dt = ds.Tables[â€œMealsâ€];
+
+DataRow[] dr5 = dt.Select($â€MealID = {mealID}â€);
+If (dr5.Length == 0)
+{
+System.Console.WriteLine(â€œMeal not found.â€);
+
+}
+Else
+{
+Dr5[0].Delete();
+System.Console.WriteLine($â€Meal details of id {mealID} deteled
+successfully.â€);
+Adap.Update(dt);
+
+}
+
+}
+
+}
+
+Public static void DeleteByName(string mealname)
+{
+Using (SqlConnection connection = new SqlConnection(connectionString))
+{
+SqlCommand cmd = new SqlCommand(â€œSelect * from Mealsâ€, connection);
+SqlDataAdapter adap = new SqlDataAdapter(cmd);
+SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œMealsâ€);
+
+DataTable dt = ds.Tables[â€œMealsâ€];
+
+DataRow[] dr6 = dt.Select($â€MealName = â€˜{mealname}â€™â€);
+If (dr6.Length == 0)
+{
+System.Console.WriteLine(â€œMeal not found.â€);
+
+}
+Else
+{
+Dr6[0].Delete();
+System.Console.WriteLine($â€Meal details of id {mealname} deteled
+successfully.â€);
+Adap.Update(dt);
+
+}
+
+}
+
+}
+
+Public static void SearchById(int meal1ID)
+{
+Using (SqlConnection connection = new SqlConnection(connectionString))
+{
+
+SqlDataAdapter adap = new SqlDataAdapter(â€œSelect * from Mealsâ€,
+connection);
+SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œMealsâ€);
+
+DataTable dt = ds.Tables[â€œMealsâ€];
+
+DataRow[] dr2 = dt.Select($â€MealID = {meal1ID}â€);
+If (dr2.Length == 0)
+{
+System.Console.WriteLine($â€No meal with is this {meal1ID} found.â€);
+
+}
+Else
+{
+System.Console.WriteLine($â€Element for the meal id : {meal1ID}â€);
+System.Console.WriteLine($â€MealId: {dr2[0][â€œMealIDâ€]}, MealName:
+{dr2[0][â€œMealNameâ€]}, {dr2[0][â€œDayOfWeekâ€]}, {dr2[0][â€œCaloriesâ€]}â€);
+
+}
+
+}
+
+}
+
+Public static void SearchByName(string mealName)
+{
+Using (SqlConnection connection = new SqlConnection(connectionString))
+{
+SqlDataAdapter adap = new SqlDataAdapter(â€œSelect * from Mealsâ€,
+connection);
+SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œMealsâ€);
+
+DataTable dt = ds.Tables[â€œMealsâ€];
+
+// DataRow[] dr2 = dt.Select($â€MealName = â€˜{mealName}â€™â€);
+DataView dv = new DataView(dt);
+dv.RowFilter = $â€MealName = â€˜{mealName}â€™â€;
+if (dv.Count == 0)
+{
+System.Console.WriteLine($â€No meal with is this {mealName} found.â€);
+
+}
+Else
+{
+Foreach(DataRowView dv1 in dv)
+{
+System.Console.WriteLine($â€Element for the meal id : {mealName}â€);
+System.Console.WriteLine($â€MealId: {dv1[â€œMealIDâ€]}, MealName:
+{dv1[â€œMealNameâ€]}, {dv1[â€œDayOfWeekâ€]}, {dv1[â€œCaloriesâ€]}â€);
+
+}
+
+}
+
+}
+
+}
+Public static void SortByName()
+{
+Using (SqlConnection connection = new SqlConnection(connectionString))
+{
+SqlDataAdapter adap = new SqlDataAdapter(â€œSelect * from Mealsâ€,
+connection);
+SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œMealsâ€);
+
+DataTable dt = ds.Tables[â€œMealsâ€];
+DataView dv = new DataView(dt);
+dv.Sort = â€œMealName ASCâ€;
+foreach(DataRowView rowView in dv)
+{
+System.Console.WriteLine($â€MealId: {rowView[â€œMealIDâ€]}, MealName:
+{rowView[â€œMealNameâ€]}, {rowView[â€œDayOfWeekâ€]}, {rowView[â€œCaloriesâ€]}â€);
+
+}
+
+}
+
+}
+
+Public static void SortById()
+{
+Using (SqlConnection connection = new SqlConnection(connectionString))
+{
+SqlDataAdapter adap = new SqlDataAdapter(â€œSelect * from Mealsâ€,
+connection);
+SqlCommandBuilder bui = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œMealsâ€);
+
+DataTable dt = ds.Tables[â€œMealsâ€];
+DataView dv = new DataView(dt);
+dv.Sort = â€œMealID DESCâ€;
+foreach(DataRowView rowView in dv)
+{
+System.Console.WriteLine($â€MealId: {rowView[â€œMealIDâ€]}, MealName:
+{rowView[â€œMealNameâ€]}, {rowView[â€œDayOfWeekâ€]}, {rowView[â€œCaloriesâ€]}â€);
+}
+
+}
+
+}
+
+Public static void Main(string[] args)
+{
+Bool ret = true;
+While (ret)
+{
+System.Console.WriteLine(â€œMenuâ€);
+System.Console.WriteLine(â€œ1. Add Mealâ€);
+System.Console.WriteLine(â€œ2. List Mealsâ€);
+System.Console.WriteLine(â€œ3. Update Meal Detailsâ€);
+System.Console.WriteLine(â€œ4. SearchByIDâ€);
+System.Console.WriteLine(â€œ5. SortByIdâ€);
+System.Console.WriteLine(â€œ6. SortByNameâ€);
+System.Console.WriteLine(â€œ7. SearchbyNameâ€);
+System.Console.WriteLine(â€œ8. Delete by IDâ€);
+System.Console.WriteLine(â€œ9. Delete by Nameâ€);
+System.Console.WriteLine(â€œ10. Exitâ€);
+System.Console.WriteLine(â€œEnter your choice (1-5):â€);
+Int choice = int.Parse(Console.ReadLine());
+
+Switch (choice)
+{
+Case 1:
+System.Console.WriteLine(â€œEnter details for the new Meal:â€);
+
+System.Console.Write(â€œMeal Name: â€œ);
+String name1 = Console.ReadLine();
+System.Console.Write(â€œDay of the Week: â€œ);
+String dow = Console.ReadLine();
+System.Console.Write(â€œCalories: â€œ);
+Int ch = int.Parse(Console.ReadLine());
+
+Meal ml = new Meal { MealName = name1, DayOfWeek = dow, Calories =
+ch };
+AddMeal(ml);
+
+Break;
+Case 2:
+ListMeals();
+Break;
+Case 3:
+System.Console.Write(â€œEnter the MealID to update: â€œ);
+Int id4 = int.Parse(Console.ReadLine());
+System.Console.Write(â€œEnter new Meal Name: â€œ);
+String Nname = Console.ReadLine();
+System.Console.Write(â€œEnter new Day of the Week: â€œ);
+String Ndow = Console.ReadLine();
+System.Console.Write(â€œEnter new Calories: â€œ);
+Int Nch = int.Parse(Console.ReadLine());
+UpdateMeal(id4, Nname, Ndow, Nch);
+Break;
+Case 4:
+
+System.Console.Write(â€œEnter the id to search by id: â€œ);
+Int idF = int.Parse(Console.ReadLine());
+SearchById(idF);
+Break;
+Case 5:
+// System.Console.Write(â€œEnter the id to search by id: â€œ);
+// int id0 = int.Parse(Console.ReadLine());
+SortById();
+
+Break;
+Case 6:
+SortByName();
+
+Break;
+Case 7:
+System.Console.Write(â€œEnter the MEAL NAME to search by Name: â€œ);
+String nm = Console.ReadLine();
+SearchByName(nm);
+
+Break;
+Case 8:
+System.Console.Write(â€œEnter the id to search by id: â€œ);
+Int id0 = int.Parse(Console.ReadLine());
+DeleteByID(id0);
+Break;
+Case 9:
+System.Console.Write(â€œEnter the name to search: â€œ);
+
+String n1 = Console.ReadLine();
+DeleteByName(n1);
+Break;
+Case 10:
+Ret = false;
+System.Console.WriteLine(â€œExiting the applicationâ€¦â€);
+Break;
+
+Default:
+System.Console.WriteLine(â€œInvalid choice, please try again.â€);
+Break;
+}
+
+}
+
+}
+}
+---------------------------------------------------------------------
+         ADO.NET
+-------------------------------------------------------------------
+
+Using System;
+Using System.Data.SqlClient;
+Using System.Data;
+Using System.Runtime.InteropServices;
+
+Public class Person
+{
+Public int PersonID{get; set;}
+Public string PersonName{get; set;}
+Public string PersonSurname{get; set;}
+Public int Age {get; set;}
+
+}
+Public class Program
+{
+Public static void Main(string[] args)
+{
+System.Console.WriteLine(â€œ1. Add Personâ€);
+System.Console.WriteLine(â€œ2. Update Personâ€);
+System.Console.WriteLine(â€œ3. Display Peopleâ€);
+System.Console.WriteLine(â€œ4. Delete by IDâ€);
+System.Console.WriteLine(â€œ5. Display by nameâ€);
+System.Console.WriteLine(â€œ6. Update by Nameâ€);
+System.Console.WriteLine(â€œ7. Delete by nameâ€);
+System.Console.WriteLine(â€œ8. Delete by thresholdâ€);
+System.Console.WriteLine(â€œ9. Delete by Charâ€);
+
+System.Console.Write(â€œEnter your choice: â€œ);
+Int choice = int.Parse(Console.ReadLine());
+
+Switch(choice)
+{
+Case 1:
+
+System.Console.Write(â€œEnter the Person name: â€œ);
+String nm = Console.ReadLine();
+System.Console.Write(â€œEnter the Person Surname: â€œ);
+String snm = Console.ReadLine();
+System.Console.Write(â€œEnter the Person Age: â€œ);
+Int age1 = int.Parse(Console.ReadLine());
+
+Person person = new Person();
+Person.PersonName = nm;
+Person.PersonSurname = snm;
+Person.Age = age1;
+
+AddPerson(person);
+Break;
+
+Case 2:
+
+System.Console.Write(â€œEnter the id to be updated details: â€œ);
+Int id2 = int.Parse(Console.ReadLine());
+System.Console.Write(â€œEnter the new Person name: â€œ);
+
+String nm1 = Console.ReadLine();
+System.Console.Write(â€œEnter the new Person Surname: â€œ);
+String snm1 = Console.ReadLine();
+System.Console.Write(â€œEnter the new Person Age: â€œ);
+Int age11 = int.Parse(Console.ReadLine());
+
+UpdatePerson(id2, nm1, snm1, age11);
+Break;
+
+Case 3:
+DisplayPeople();
+Break;
+
+Case 4:
+System.Console.WriteLine(â€œEnter the id: â€œ);
+Int id3 = int.Parse(Console.ReadLine());
+Delete(id3);
+Break;
+
+Case 5:
+System.Console.Write(â€œEnter the Person name to display: â€œ);
+String nm111 = Console.ReadLine();
+DisplaybyName(nm111);
+Break;
+
+Case 6:
+System.Console.Write(â€œEnter the Person name to update: â€œ);
+
+String nm1111 = Console.ReadLine();
+System.Console.Write(â€œEnter the new Person Surname: â€œ);
+String snm11 = Console.ReadLine();
+System.Console.Write(â€œEnter the new Person Age: â€œ);
+Int age111 = int.Parse(Console.ReadLine());
+UpdatebyName(nm1111, snm11, age111);
+Break;
+
+Case 7:
+System.Console.Write(â€œEnter the Person name to delete: â€œ);
+String nm11111 = Console.ReadLine();
+DeletebyName(nm11111);
+Break;
+
+Case 8:
+System.Console.WriteLine(â€œEnter the threshold: â€œ);
+Int thresholds = int.Parse(Console.ReadLine());
+DeletebyThreshold(thresholds);
+Break;
+
+Case 9:
+DeletebyChar();
+Break;
+
+Default:
+System.Console.WriteLine(â€œPlease enter a valid value!â€);
+Break;
+
+}
+
+}
+
+Public static void AddPerson(Person person)
+{
+Try
+{
+Using (SqlConnection connection= new SqlConnection(â€œUser
+ID=sa;password=examlyMssql@123;server=localhost;Database=newdb;trusted_conne
+ction=false;Persist Security Info=false;Encrypt=falseâ€))
+{
+SqlCommand cmd = new SqlCommand(â€œSelect * from Peopleâ€, connection);
+SqlDataAdapter adap = new SqlDataAdapter(cmd);
+SqlCommandBuilder builder = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œPeopleâ€);
+
+DataTable dt = ds.Tables[â€œPeopleâ€];
+DataRow dr = dt.NewRow();
+Dr[1] = person.PersonName;
+Dr[2] = person.PersonSurname;
+Dr[3] = person.Age;
+
+Dt.Rows.Add(dr);
+Adap.Update(dt);
+
+System.Console.WriteLine(â€œPerson added sucessfully!â€);
+
+}
+
+}catch(Exception ex)
+{
+System.Console.WriteLine(ex.Message);
+}
+}
+
+Public static void UpdatePerson(int id, string name, string surname, int age)
+{
+Try
+{
+Using (SqlConnection connection= new SqlConnection(â€œUser
+ID=sa;password=examlyMssql@123;server=localhost;Database=newdb;trusted_conne
+ction=false;Persist Security Info=false;Encrypt=falseâ€))
+{
+SqlCommand cmd = new SqlCommand(â€œSelect * from Peopleâ€, connection);
+SqlDataAdapter adap = new SqlDataAdapter(cmd);
+SqlCommandBuilder builder = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œPeopleâ€);
+
+DataTable dt = ds.Tables[â€œPeopleâ€];
+DataRow[] dr = dt.Select($â€PersonID = {id}â€);
+
+If(dr.Length == 0)
+
+{
+System.Console.WriteLine(â€œThe person with id not exist.â€);
+}else
+{
+Dr[0][â€œPersonNameâ€] = name;
+Dr[0][â€œPersonSurnameâ€] = surname;
+Dr[0][â€œAgeâ€] = age;
+
+System.Console.WriteLine(â€œPerson Updated Successfully!â€);
+}
+
+}
+
+}catch(Exception ex)
+{
+System.Console.WriteLine(ex.Message);
+}
+}
+
+Public static void DisplayPeople()
+{
+Try
+{
+Using (SqlConnection connection= new SqlConnection(â€œUser
+ID=sa;password=examlyMssql@123;server=localhost;Database=newdb;trusted_conne
+ction=false;Persist Security Info=false;Encrypt=falseâ€))
+{
+SqlCommand cmd = new SqlCommand(â€œSelect * from Peopleâ€, connection);
+
+SqlDataAdapter adap = new SqlDataAdapter(cmd);
+SqlCommandBuilder builder = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œPeopleâ€);
+
+DataTable dt = ds.Tables[â€œPeopleâ€];
+
+If(dt.Rows.Count == 0)
+{
+System.Console.WriteLine(â€œThe person with id not exist.â€);
+}else
+{
+Foreach(DataRow row in dt.Rows)
+{
+System.Console.WriteLine($â€Person ID: {row[â€œPersonIDâ€]}, Person
+Name: {row[â€œPersonNameâ€]}, Person Surname: {row[â€œPersonSurnameâ€]}, Age:
+{row[â€œAgeâ€]}â€);
+}
+}
+
+}
+
+}catch(Exception ex)
+{
+System.Console.WriteLine(ex.Message);
+}
+
+}
+
+Public static void Delete(int id)
+{
+Try
+{
+Using (SqlConnection connection= new SqlConnection(â€œUser
+ID=sa;password=examlyMssql@123;server=localhost;Database=newdb;trusted_conne
+ction=false;Persist Security Info=false;Encrypt=falseâ€))
+{
+SqlDataAdapter adap = new SqlDataAdapter(â€œSelect * from Peopleâ€,
+connection);
+SqlCommandBuilder builder = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œPeopleâ€);
+
+DataTable dt = ds.Tables[â€œPeopleâ€];
+DataRow[] dr = dt.Select($â€PersonID = {id}â€);
+
+If(dr.Length == 0)
+{
+System.Console.WriteLine(â€œThe person with id not exist.â€);
+}else
+{
+Dr[0].Delete();
+Adap.Update(dt);
+
+System.Console.WriteLine(â€œPerson Deleted Successfully!â€);
+
+}
+
+}
+
+}catch(Exception ex)
+{
+System.Console.WriteLine(ex.Message);
+}
+
+}
+
+Public static void DisplaybyName(string name)
+{
+Try
+{
+Using (SqlConnection connection= new SqlConnection(â€œUser
+ID=sa;password=examlyMssql@123;server=localhost;Database=newdb;trusted_conne
+ction=false;Persist Security Info=false;Encrypt=falseâ€))
+{
+SqlDataAdapter adap = new SqlDataAdapter($â€Select * from People where
+PersonName = â€˜{name}â€™â€, connection);
+SqlCommandBuilder builder = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œPeopleâ€);
+
+DataTable dt = ds.Tables[â€œPeopleâ€];
+
+If(dt.Rows.Count == 0)
+
+{
+System.Console.WriteLine(â€œThe person with id not exist.â€);
+}else
+{
+Foreach(DataRow row in dt.Rows)
+{
+System.Console.WriteLine($â€Person ID: {row[â€œPersonIDâ€]}, Person
+Name: {row[â€œPersonNameâ€]}, Person Surname: {row[â€œPersonSurnameâ€]}, Age:
+{row[â€œAgeâ€]}â€);
+}
+}
+
+}
+
+}catch(Exception ex)
+{
+System.Console.WriteLine(ex.Message);
+}
+}
+
+Public static void UpdatebyName(string name, string surname, int age)
+{
+Try
+{
+Using (SqlConnection connection= new SqlConnection(â€œUser
+ID=sa;password=examlyMssql@123;server=localhost;Database=newdb;trusted_conne
+ction=false;Persist Security Info=false;Encrypt=falseâ€))
+{
+
+SqlCommand cmd = new SqlCommand(â€œSelect * from Peopleâ€, connection);
+SqlDataAdapter adap = new SqlDataAdapter(cmd);
+SqlCommandBuilder builder = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œPeopleâ€);
+
+DataTable dt = ds.Tables[â€œPeopleâ€];
+DataRow[] dr = dt.Select($â€PersonName = â€˜{name}â€™â€);
+
+If(dr.Length == 0)
+{
+System.Console.WriteLine(â€œThe person with id not exist.â€);
+}else
+{
+Dr[0][â€œPersonSurnameâ€] = surname;
+Dr[0][â€œAgeâ€] = age;
+Adap.Update(dt);
+
+System.Console.WriteLine(â€œPerson Updated Successfully!â€);
+}
+
+}
+
+}catch(Exception ex)
+{
+System.Console.WriteLine(ex.Message);
+}
+
+}
+
+Public static void DeletebyName(string name)
+{
+Try
+{
+Using (SqlConnection connection= new SqlConnection(â€œUser
+ID=sa;password=examlyMssql@123;server=localhost;Database=newdb;trusted_conne
+ction=false;Persist Security Info=false;Encrypt=falseâ€))
+{
+SqlCommand cmd = new SqlCommand(â€œSelect * from Peopleâ€, connection);
+SqlDataAdapter adap = new SqlDataAdapter(cmd);
+SqlCommandBuilder builder = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œPeopleâ€);
+
+DataTable dt = ds.Tables[â€œPeopleâ€];
+DataRow[] dr = dt.Select($â€PersonName = â€˜{name}â€™â€);
+
+If(dr.Length == 0)
+{
+System.Console.WriteLine(â€œThe person with id not exist.â€);
+}else
+{
+Foreach(DataRow rw in dr)
+{
+Rw.Delete();
+
+}
+Adap.Update(dt);
+
+System.Console.WriteLine(â€œPerson Deleted Successfully!â€);
+}
+
+}
+
+}catch(Exception ex)
+{
+System.Console.WriteLine(ex.Message);
+}
+
+}
+
+Public static void DeletebyThreshold(int threshold)
+{
+Try
+{
+Using (SqlConnection connection= new SqlConnection(â€œUser
+ID=sa;password=examlyMssql@123;server=localhost;Database=newdb;trusted_conne
+ction=false;Persist Security Info=false;Encrypt=falseâ€))
+{
+SqlCommand cmd = new SqlCommand($â€Select * from People where Age &gt;
+{threshold}â€, connection);
+SqlDataAdapter adap = new SqlDataAdapter(cmd);
+
+SqlCommandBuilder builder = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œPeopleâ€);
+
+DataTable dt = ds.Tables[â€œPeopleâ€];
+
+If(dt.Rows.Count == 0)
+{
+System.Console.WriteLine(â€œThe person with id not exist.â€);
+}else
+{
+Foreach(DataRow rv in dt.Rows)
+{
+Rv.Delete();
+
+}
+Adap.Update(dt);
+
+System.Console.WriteLine(â€œPerson Deleted Successfully!â€);
+}
+
+}
+
+}catch(Exception ex)
+{
+System.Console.WriteLine(ex.Message);
+}
+
+}
+
+Public static void DeletebyChar()
+{
+Try
+{
+Using (SqlConnection connection= new SqlConnection(â€œUser
+ID=sa;password=examlyMssql@123;server=localhost;Database=newdb;trusted_conne
+ction=false;Persist Security Info=false;Encrypt=falseâ€))
+{
+SqlCommand cmd = new SqlCommand($â€Select * from People where
+PersonSurname Like â€˜P%â€™â€, connection);
+SqlDataAdapter adap = new SqlDataAdapter(cmd);
+SqlCommandBuilder builder = new SqlCommandBuilder(adap);
+DataSet ds = new DataSet();
+Adap.Fill(ds, â€œPeopleâ€);
+
+DataTable dt = ds.Tables[â€œPeopleâ€];
+
+If(dt.Rows.Count == 0)
+{
+System.Console.WriteLine(â€œThe person with id not exist.â€);
+}else
+{
+Foreach(DataRow rv in dt.Rows)
+{
+Rv.Delete();
+
+}
+Adap.Update(dt);
+
+System.Console.WriteLine(â€œPerson Deleted Successfully!â€);
+}
+
+}
+
+}catch(Exception ex)
+{
+System.Console.WriteLine(ex.Message);
+}
+
+}
+
+}
